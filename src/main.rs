@@ -1,25 +1,22 @@
-//! This example illustrates how have a mouse's clicks/wheel/movement etc fall through the spawned transparent window to a window below.
-//! If you build this, and hit 'P' it should toggle on/off the mouse's passthrough.
-//! Note: this example will not work on following platforms: iOS / Android / Web / X11. Window fall through is not supported there.
-// #[cfg(any(target_os = "macos", target_os = "linux"))]
 use bevy::window::CompositeAlphaMode;
 use bevy::window::WindowLevel;
+use bevy::window::WindowMode::BorderlessFullscreen;
 use bevy::{prelude::*, window::CursorOptions};
 use rand::prelude::*;
 use std::time::Duration;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(Color::NONE)) // Use a transparent window, to make effects obvious.
+        .insert_resource(ClearColor(Color::NONE)) // Use a transparent window
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                // Set the window's parameters, note we're setting the window to always be on top.
+                // Set the window to always on top and borderlessfullscreen
                 transparent: true,
                 decorations: false,
                 resolution: (1920, 1080).into(),
-                // position: (0, 0).into(),
                 window_level: WindowLevel::AlwaysOnTop,
-                // #[cfg(target_os = "linux")]
+                fit_canvas_to_parent: true,
+                mode: BorderlessFullscreen(MonitorSelection::Current),
                 composite_alpha_mode: CompositeAlphaMode::PreMultiplied,
                 ..default()
             }),
@@ -28,12 +25,12 @@ fn main() {
         .insert_resource(ClearColor(Color::NONE))
         .insert_resource(GreetTimer(Timer::from_seconds(1.0, TimerMode::Repeating)))
         .add_systems(Startup, setup)
-        .add_systems(Startup, toggle_mouse_passthrough) // This allows us to hit 'P' to toggle on/off the mouse's passthrough
+        .add_systems(Startup, toggle_mouse_passthrough) // This sets the mouse passthrough, theres probably an easier way to do this but im too lazy
         .add_systems(Update, execute_animations)
         .add_systems(
             Update,
             (
-                // Press the right arrow key to animate the right sprite
+                // trigger the skeleton chance, its called rightsprite because i was too lazy to rename it from the example
                 trigger_animation::<RightSprite>,
             ),
         )
@@ -76,18 +73,17 @@ fn setup(
 ) {
     // UI camera
     commands.spawn(Camera2d);
-    // Text with one span
     // Load the sprite sheet using the `AssetServer`
-    let texture = asset_server.load("branding/spritesheet.png");
+    let texture = asset_server.load("spritesheet.png");
 
-    // The sprite sheet has 7 sprites arranged in a row, and they are all 24px x 24px
+    // The sprite sheet is loaded here
     let layout = TextureAtlasLayout::from_grid(UVec2::new(1920, 1080), 6, 6, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
-
-    // The second (right-hand) sprite runs at 20 FPS
+    let mut windowpos = WindowPosition::new(ivec2(0, 0));
+    // set the animation to 50fps with the first 34 frames
     let animation_config_2 = AnimationConfig::new(0, 33, 50);
-    WindowPosition::new(ivec2(0, 0));
-    // Create the second (right-hand) sprite
+    WindowPosition::set(&mut windowpos, ivec2(0, 0));
+    // Create the sprite (invisible at first but plays when you hit the chance)
     commands.spawn((
         Sprite {
             image: texture.clone(),
@@ -102,7 +98,7 @@ fn setup(
         animation_config_2,
     ));
 }
-// A simple system to handle some keyboard input and toggle on/off the hit test.
+// self explanitory
 fn toggle_mouse_passthrough(mut cursor_options: Single<&mut CursorOptions>) {
     cursor_options.hit_test = false;
 }
@@ -112,11 +108,11 @@ fn trigger_animation<S: Component>(
     time: Res<Time>,
     mut timer: ResMut<GreetTimer>,
 ) {
-    // We create a new timer when the animation is triggered
+    // dont do as i do
     let mut rng = rand::rng();
-    // let mut timerss = Timer::from_seconds(1.0, TimerMode::Repeating);
+    // i had to ask for help in the discord for this one
     if timer.0.tick(time.delta()).just_finished() {
-        let num = rng.random_range(0..10000);
+        let num = rng.random_range(0..1);
         println!("{}", num);
         println!("just finished!");
 
