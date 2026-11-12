@@ -112,7 +112,7 @@ fn trigger_animation<S: Component>(
     let mut rng = rand::rng();
     // i had to ask for help in the discord for this one
     if timer.0.tick(time.delta()).just_finished() {
-        let num = rng.random_range(0..1);
+        let num = rng.random_range(0..10000);
         println!("{}", num);
         println!("just finished!");
 
